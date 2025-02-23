@@ -3,7 +3,7 @@ using ITensors, ITensorMPS
 
 Z = [1 0; 0 -1]
 X = [0 1; 1 0]
-Y = [0 -im; im  0]
+Y = [0 -im; im 0]
 Id = [1 0; 0 1]
 Id_Id = kron(Id, Id)
 Z_Z = kron(Z, Z)
@@ -20,8 +20,8 @@ sites = siteinds(4, 3)
 
 J = 1.1234
 δt = 3.8
-two_site_operator_forward = exp(- im * J * kron(Z_forward, Z_forward) * δt)
-two_site_operator_backward =  exp(im * J * kron(Z_backward, Z_backward) * δt)
+two_site_operator_forward = exp(-im * J * kron(Z_forward, Z_forward) * δt)
+two_site_operator_backward = exp(im * J * kron(Z_backward, Z_backward) * δt)
 two_site_operator = two_site_operator_forward * two_site_operator_backward
 @show two_site_operator
 
@@ -31,13 +31,13 @@ function create_dephaser_boundary(κ, δt, i, l)
     single_site_deph = exp(-2 * κ * δt * (Id_Id - Z_Z))
     @show single_site_deph
     dephaser = diag_itensor(ComplexF64, i', i, l)
-    for x = 1:4 
-        dephaser[x, x, x] = single_site_deph[x, x] 
-    end 
+    for x = 1:4
+        dephaser[x, x, x] = single_site_deph[x, x]
+    end
 
     return dephaser
 
-end 
+end
 
 
 ##We should create for 0 zoz, simply by making the 4x4 matrix, which is pretty easy to construct
@@ -48,17 +48,17 @@ function create_zoz(J, δt, l)
     M = zeros(ComplexF64, 4, 4)
 
     #Configurations with same spin in both branches (diagonal)
-    for x = 1:4 
-        M[x, x] = exp(-2 * im * J * δt)/2
-    end 
+    for x = 1:4
+        M[x, x] = exp(-2 * im * J * δt) / 2
+    end
 
     M[1, 2] = 1
-    M[1, 3] = 1 
+    M[1, 3] = 1
     M[1, 4] = exp(2 * im * J * δt)
 
     M[2, 3] = exp(2 * im * J * δt)
     M[2, 4] = 1
-    M[3, 4] = 1 
+    M[3, 4] = 1
 
     M = M + transpose(M)
 
@@ -68,7 +68,7 @@ function create_zoz(J, δt, l)
 
     return zoz
 
-end 
+end
 
 function create_kick(ϵ, i)
 
@@ -76,9 +76,9 @@ function create_kick(ϵ, i)
 
     kick = ITensor(M, i', i)
 
-    return kick 
+    return kick
 
-end 
+end
 
 #This creates the boundary dual transfer matrix
 #for τ steps  
@@ -101,14 +101,14 @@ function create_boundary_dual_transfer(site, κ, J, δt, ϵ, τ)
         kick = create_kick(ϵ, site)
         newT = prime(kick) * (diamond * zoz)
         ITensors.replaceprime!(newT, 2, 1)
-        T = prime(newT)*T
+        T = prime(newT) * T
         ITensors.replaceprime!(T, 1, 0)
         ITensors.replaceprime!(T, 2, 1)
-    end 
+    end
 
-    return T 
+    return T
 
-end 
+end
 
 #=function create_bulk_dual_transfer(T_boundary, site, sites_num, h, J, ϵ, τ)
 
@@ -126,7 +126,7 @@ end
     println("This")
 
     for N = 2*(sites_num-1): (2*(sites_num-1) + (τ-2))
-        
+
         ll = inds(T_boundary)[end-N]
         println(N, ll)
         lr = Index(2, "lr" * string(N))
@@ -147,7 +147,7 @@ end=#
 
 
 
-let 
+let
     J = 2
     κ = 1
     ϵ = 4
@@ -157,14 +157,14 @@ let
 
     link = Index(4, "l")
 
-    
+
     result = create_boundary_dual_transfer(sites[1], κ, J, δt, ϵ, τ)
-    @show result 
-    
+    @show result
+
     #@show inds(result)
 
     #new_res = create_bulk_dual_transfer(result, sites[2], 2,  h, J, ϵ, τ)
 
     #new_new_res = create_bulk_dual_transfer(new_res, sites[3], 3,  h, J, ϵ, τ)
 
-end 
+end

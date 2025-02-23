@@ -1,148 +1,148 @@
 using ITensors, ITensorMPS
-using Plots 
+using Plots
 
 
 function swapcols!(X::AbstractMatrix, i::Integer, j::Integer)
-    @inbounds for k = 1:size(X,1)
-        X[k,i], X[k,j] = X[k,j], X[k,i]
+    @inbounds for k = 1:size(X, 1)
+        X[k, i], X[k, j] = X[k, j], X[k, i]
     end
 end
 
 function swaprows!(X::AbstractMatrix, i::Integer, j::Integer)
-    @inbounds for k = 1:size(X,2)
-        X[i,k], X[j,k] = X[j,k], X[i,k]
+    @inbounds for k = 1:size(X, 2)
+        X[i, k], X[j, k] = X[j, k], X[i, k]
     end
-end 
+end
 
 S_z = [1/2 0; 0 -1/2]
 S_x = [0 1/2; 1/2 0]
-S_y = [0 -im * 1/2; im * 1/2 0]
+S_y = [0 -im*1/2; im*1/2 0]
 
 S_plus = S_x + im * S_y
 S_minus = S_x - im * S_y
 Id = [1 0; 0 1]
 
 
-let 
+let
 
     N = 10
     d = 2
     t = 0.1
-    s = siteinds(d^2,N)
+    s = siteinds(d^2, N)
 
     println(length(s))
 
     #Creation of the initial density matrix 
-   #= chi = 1
+    #= chi = 1
 
-    psi = randomMPS(s;linkdims=chi)
-    
-    idx1, idx2 = inds(psi[1])
-    O1 = onehot(idx1 => 1, idx2 => 1)
+     psi = randomMPS(s;linkdims=chi)
 
-    psi[1] = O1 
+     idx1, idx2 = inds(psi[1])
+     O1 = onehot(idx1 => 1, idx2 => 1)
 
-    idx1, idx2 = inds(psi[N])
-    O1 = onehot(idx1 => 1, idx2 => 4)
+     psi[1] = O1 
 
-    psi[N] = O1 
+     idx1, idx2 = inds(psi[N])
+     O1 = onehot(idx1 => 1, idx2 => 4)
 
-    for i = 2:N-1
-        idx1, idx2, idx3 = inds(psi[i])
-        if i % 2 == 0
-            O1 = onehot(idx1 =>1, idx2 => 4, idx3 => 1)
-        else 
-            O1 = onehot(idx1 =>1, idx2 => 1, idx3 => 1)
-        end 
+     psi[N] = O1 
 
-        psi[i] = O1 
-    end 
+     for i = 2:N-1
+         idx1, idx2, idx3 = inds(psi[i])
+         if i % 2 == 0
+             O1 = onehot(idx1 =>1, idx2 => 4, idx3 => 1)
+         else 
+             O1 = onehot(idx1 =>1, idx2 => 1, idx3 => 1)
+         end 
 
-    println(psi[3])
+         psi[i] = O1 
+     end 
 
-    #Creation of the (vectorized) identity operator 
-    chi = 1
+     println(psi[3])
 
-    id = randomMPS(s;linkdims=chi)
+     #Creation of the (vectorized) identity operator 
+     chi = 1
 
-    for i = 1:N 
-        for j = 1:d^2
-            if j == 1 || j == 4 
-                id[i][j] = 1 
-            else 
-                id[i][j] = 0
-            end 
-        end 
-    end 
+     id = randomMPS(s;linkdims=chi)
 
-    S_x_full = kron(S_x, S_x)
-    Id_full = kron(Id, Id)
-    A = kron(S_x_full, Id_full)
-    @show A
+     for i = 1:N 
+         for j = 1:d^2
+             if j == 1 || j == 4 
+                 id[i][j] = 1 
+             else 
+                 id[i][j] = 0
+             end 
+         end 
+     end 
 
-    for i=0:d-1, j = 0:d-1
-        for k = 0:d-2, l = k:d-1
-            a = d^3*i + d^2 * k + d*l + j + 1
-            b = d^3*i + d^2 * l + d*k + j + 1
-            swapcols!(A, a, b)
-            swaprows!(A, a, b)
-        end 
-    end 
-    @show A
-    
+     S_x_full = kron(S_x, S_x)
+     Id_full = kron(Id, Id)
+     A = kron(S_x_full, Id_full)
+     @show A
 
-    #
-    h_j = kron(S_z, S_z) + 1/2 * kron(S_plus, S_minus) + 1/2 * kron(S_minus, S_plus)
+     for i=0:d-1, j = 0:d-1
+         for k = 0:d-2, l = k:d-1
+             a = d^3*i + d^2 * k + d*l + j + 1
+             b = d^3*i + d^2 * l + d*k + j + 1
+             swapcols!(A, a, b)
+             swaprows!(A, a, b)
+         end 
+     end 
+     @show A
 
-    h_j = exp(-im * t/2 * h_j)
 
-    U = kron(h_j, conj(h_j))
+     #
+     h_j = kron(S_z, S_z) + 1/2 * kron(S_plus, S_minus) + 1/2 * kron(S_minus, S_plus)
 
-    for i=0:d-1, j = 0:d-1
-        for k = 0:d-2, l = k:d-1
-            a = d^3*i + d^2 * k + d*l + j + 1
-            b = d^3*i + d^2 * l + d*k + j + 1
-            swapcols!(U, a, b)
-            swaprows!(U, a, b)
-        end 
-    end 
+     h_j = exp(-im * t/2 * h_j)
 
-    gates = ITensor[]
-    for j = 1:(N-1)
-        s1 = s[j]
-        s2 = s[j+1]
-        G_j = op(U, [s[j], s[j+1]])
-        push!(gates, G_j)
-    end 
-        
-    append!(gates, reverse(gates))
+     U = kron(h_j, conj(h_j))
 
-    ttotal = 5
+     for i=0:d-1, j = 0:d-1
+         for k = 0:d-2, l = k:d-1
+             a = d^3*i + d^2 * k + d*l + j + 1
+             b = d^3*i + d^2 * l + d*k + j + 1
+             swapcols!(U, a, b)
+             swaprows!(U, a, b)
+         end 
+     end 
 
-    Obs = kron(S_z, Id)
-    O = op(Obs, s[5])
+     gates = ITensor[]
+     for j = 1:(N-1)
+         s1 = s[j]
+         s2 = s[j+1]
+         G_j = op(U, [s[j], s[j+1]])
+         push!(gates, G_j)
+     end 
 
-    println(O)
+     append!(gates, reverse(gates))
 
-    t_array = []
-    S_z_array = []
-    for tau in 0.0:0.1:ttotal
+     ttotal = 5
 
-        psi_copy = deepcopy(psi)
-        new_A = O * psi_copy[5]
-        psi_copy[5] = new_A
-        noprime!(psi[5])
+     Obs = kron(S_z, Id)
+     O = op(Obs, s[5])
 
-        push!(t_array, tau)
-        push!(S_z_array, real(inner(id, psi_copy)))
-        
-        println(tau)
-        tau≈ttotal && break
-    
-        psi = apply(gates, psi)
-        
-        #println(inner(id, psi))
-    end
+     println(O)
 
-    plot(t_array, S_z_array) =#
-end 
+     t_array = []
+     S_z_array = []
+     for tau in 0.0:0.1:ttotal
+
+         psi_copy = deepcopy(psi)
+         new_A = O * psi_copy[5]
+         psi_copy[5] = new_A
+         noprime!(psi[5])
+
+         push!(t_array, tau)
+         push!(S_z_array, real(inner(id, psi_copy)))
+
+         println(tau)
+         tau≈ttotal && break
+
+         psi = apply(gates, psi)
+
+         #println(inner(id, psi))
+     end
+
+     plot(t_array, S_z_array) =#
+end

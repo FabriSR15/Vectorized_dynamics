@@ -3,7 +3,7 @@ using ITensors, ITensorMPS
 
 Z = [1 0; 0 -1]
 X = [0 1; 1 0]
-Y = [0 -im; im  0]
+Y = [0 -im; im 0]
 Id = [1 0; 0 1]
 Id_Id = kron(Id, Id)
 Z_Z = kron(Z, Z)
@@ -30,22 +30,22 @@ function create_im(κ, J, ϵ, δt, sites)
 
     #@show von_Neumann_entropy(infl, Int(N/2))
     for x = 1:150
-        infl = apply(mpo, infl; maxdim=128)
+        infl = apply(mpo, infl; maxdim = 128)
         #@show inner(infl, infl)
         #infl /= norm(infl) 
         #println(N, " ", von_Neumann_entropy(infl, Int(N/2)))
-    end 
+    end
 
     return infl
 
-end 
+end
 
 
 function create_first_operator_edge(κ, ϵ, δt, site, link)
     dummy_1 = Index(4, "dummy1")
 
     A = Z_forward * transpose([1 0 0 1])
-    initial_tensor = 1/2 * ITensor(A, dummy_1)
+    initial_tensor = 1 / 2 * ITensor(A, dummy_1)
 
     #O_z = ITensor(Z_forward, dummy_1, new_dummy)
 
@@ -54,38 +54,38 @@ function create_first_operator_edge(κ, ϵ, δt, site, link)
     single_site_deph = exp(-im * κ * Z_forward * δt) * exp(im * κ * Z_backward * δt)
     #@show single_site_deph
     dephaser = diag_itensor(ComplexF64, dummy_1', dummy_1, site)
-    for x = 1:4 
-        dephaser[x, x, x] = single_site_deph[x, x] 
-    end 
+    for x = 1:4
+        dephaser[x, x, x] = single_site_deph[x, x]
+    end
 
     temp = dephaser * initial_tensor
 
     kick = create_kick(ϵ, dummy_1')
 
-    temp = kick * temp 
+    temp = kick * temp
 
     #@show delta(link, dummy_1'')
 
     temp = delta(link, dummy_1'') * temp
 
-    return temp 
+    return temp
 
 
-end 
+end
 
 function create_last_operator_edge(κ, ϵ, δt, site, link1)
     dummy_1 = Index(4, "dummy1")
-    
+
 
     single_site_deph = exp(-im * κ * Z_forward * δt) * exp(im * κ * Z_backward * δt)
     dephaser = diag_itensor(ComplexF64, dummy_1, link1, site)
-    for x = 1:4 
-        dephaser[x, x, x] = single_site_deph[x, x] 
-    end 
-    
+    for x = 1:4
+        dephaser[x, x, x] = single_site_deph[x, x]
+    end
+
     kick = create_kick(ϵ, dummy_1)
 
-    temp = kick * dephaser 
+    temp = kick * dephaser
 
     A = [1 0 0 1]
     A = A * Z_forward
@@ -94,31 +94,31 @@ function create_last_operator_edge(κ, ϵ, δt, site, link1)
     temp = partial_trace * temp
 
     return ITensors.permute(temp, inds(temp)[2], inds(temp)[1])
-    
+
 end
 
 function create_bulk_operator_edge(κ, ϵ, δt, site, link1, link2)
     dummy_1 = Index(4, "dummy1")
-    
+
 
     single_site_deph = exp(-im * κ * Z_forward * δt) * exp(im * κ * Z_backward * δt)
     dephaser = diag_itensor(ComplexF64, dummy_1, link1, site)
-    for x = 1:4 
-        dephaser[x, x, x] = single_site_deph[x, x] 
-    end 
-    
+    for x = 1:4
+        dephaser[x, x, x] = single_site_deph[x, x]
+    end
+
     kick = create_kick(ϵ, dummy_1)
 
-    temp = kick * dephaser 
+    temp = kick * dephaser
 
-    temp = delta(link2, dummy_1') * temp 
+    temp = delta(link2, dummy_1') * temp
     return ITensors.permute(temp, inds(temp)[1], inds(temp)[3], inds(temp)[2])
 
-end 
+end
 
 
 function create_central_site(κ, ϵ, δt, sites)
-    ρ = random_mps(sites; linkdims=4)
+    ρ = random_mps(sites; linkdims = 4)
     N = length(ρ)
 
     #First 
@@ -126,20 +126,20 @@ function create_central_site(κ, ϵ, δt, sites)
     #bulk 
     for n = 2:N-1
         ρ[n] = create_bulk_operator_edge(κ, ϵ, δt, sites[n], inds(ρ[n])[3], inds(ρ[n])[1])
-    end 
+    end
 
     #final (or initial in time, as one wants to see it)
     ρ[N] = create_first_operator_edge(κ, ϵ, δt, sites[N], inds(ρ[N])[1])
 
     return ρ
-end 
+end
 
 
-let 
-    J = pi/4 - 0.06
+let
+    J = pi / 4 - 0.06
     δt = 1
     κ = 0.88
-    ϵ = pi/4 - 0.06
+    ϵ = pi / 4 - 0.06
     d = 2
 
 
@@ -159,7 +159,7 @@ let
     infl = create_im(κ, J, ϵ, δt, sites)
     final_spin = create_central_site(κ, ϵ, δt, sites)
 
-    
+
     @show inner(conj(infl), final_spin)
 
-end 
+end
